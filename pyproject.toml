@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "sar-oil-onboard"
+version = "0.1.0"
+description = ""
+authors = ["Mitchell <belgianlion1234@icloud.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+opencv-python = "^4.10.0.84"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
