@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "args": ["-r", "./SAR_Data/GOMoil_07601_10052_102_100622_L090HHHH_CX_02_ML5X5.grd", "-p", "HHHH", "-i", "./SAR_Data/GOMoil_07601_10052_102_100622_L090_CX_02_ML5X5.ann"],
+            "console": "integratedTerminal"
+        }
+    ]
+}
