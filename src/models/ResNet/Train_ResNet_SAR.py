@@ -13,7 +13,7 @@ print('*'*10)
 print(f'CUDNN version: {torch.backends.cudnn.version()}')
 print(f'Available GPU devices: {torch.cuda.device_count()}')
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f'Using {device} device')
 
 model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', weights='ResNet18_Weights.DEFAULT')
