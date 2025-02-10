@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from models.ResNet.SARImageDataset import SARImageDataset
+from datasets.sarImageDataset import SARImageDataset
 
 print(f'PyTorch version: {torch.__version__}')
 print('*'*10)
