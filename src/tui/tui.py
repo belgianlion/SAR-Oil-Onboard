@@ -10,9 +10,9 @@ import cv2
 
 
 class TUI:
-    def __init__(self, tuiCore: TUICore):
+    def __init__(self, tuiCore: TUICore, base_path: str):
         self.tuiCore = tuiCore
-        
+        self.base_path = base_path
 
     def startup(self, batch_algorithm_runner: BatchAlgorithmRunner):
         TUICore.clear_terminal()
@@ -36,7 +36,7 @@ class TUI:
         elif selected_index == 2:
             TUICore.clear_terminal()
             images = []
-            image_folder = r'C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\training_data\1'
+            image_folder = os.path.join(self.base_path, "Datasets", "training_data", "1")
             image_files = glob.glob(os.path.join(image_folder, '*.jpg'))  # Adjust the extension if needed
 
             for image_file in image_files:

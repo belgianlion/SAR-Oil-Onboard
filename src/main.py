@@ -1,8 +1,10 @@
 from torchvision import transforms
 import torch
 import torch.nn as nn
+from src.algorithmic_segmentation.algorithms.watershedSegmentation import WatershedSegmentation
+from src.algorithmic_segmentation.algorithms.cannyEdgeDetection import CannyEdgeDetection
 from src. algorithmic_segmentation.core.batchAlgorithmRunner import BatchAlgorithmRunner
-from src.algorithmic_segmentation.algorithms.improvedOtsuSegmentation import ImprovedOtsuSegmentation
+from src.algorithmic_segmentation.algorithms.otsuSegmentation import OtsuSegmentation
 from src.datasets.sarImageDataset import SARImageDataset
 from src.models.model import Model
 from src.tui.selectMenu import SelectMenu
@@ -15,9 +17,8 @@ app_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard"
 if __name__ == "__main__":
     tuiCore = TUICore()
     tui = TUI(tuiCore)
-    segmentation_methods = []
-    segmentation_methods.append(ImprovedOtsuSegmentation())
-    batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore)
+    segmentation_methods = [OtsuSegmentation(), OtsuSegmentation(None), CannyEdgeDetection(), WatershedSegmentation()]
+    batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
     tui.startup(batchAlgorithmRunner)
 
     # deepLearningTui = DeepLearningTUI(tuiCore)
