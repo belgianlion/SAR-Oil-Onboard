@@ -162,5 +162,5 @@ cython_debug/
 #.idea/
 
 # Datasets
-**/Datasets/
+/Datasets/
 **/results/
