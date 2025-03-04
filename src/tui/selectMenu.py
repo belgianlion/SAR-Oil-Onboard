@@ -4,6 +4,7 @@ from typing import List
 
 from src.tui.keyboardInputs import KeyboardInputs
 from src.tui.tuiCore import TUICore
+from src.tui.terminalSettings import TerminalSettings
 
 if os.name == 'nt':
     import msvcrt
@@ -51,16 +52,13 @@ class SelectMenu:
                 elif key == b'\r':  # Enter key
                     return KeyboardInputs.ENTER
         else:
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(fd)
-                key = sys.stdin.read(3)
+            with TerminalSettings():
+                key = sys.stdin.read(1)
+                if key == '\x1b':  # Escape character, possibly an arrow key sequence
+                    key += sys.stdin.read(2)  # Read the next two characters
                 if key == '\x1b[A':  # Up arrow
                     return KeyboardInputs.UP
                 elif key == '\x1b[B':  # Down arrow
                     return KeyboardInputs.DOWN
                 elif key == '\n':  # Enter key
                     return KeyboardInputs.ENTER
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
