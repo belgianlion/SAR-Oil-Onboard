@@ -7,8 +7,13 @@ class CannyEdgeDetection(SegmentationMethod):
         self.high_threshold = high_threshold
 
     def segment(self, image):
-        # Convert the image to grayscale
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Check if the image has 3 or 4 channels before converting to grayscale
+        if len(image.shape) == 2:
+            gray_image = image
+        elif len(image.shape) == 3 and image.shape[2] in [3, 4]:
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            raise ValueError("Input image must have 2, 3, or 4 channels")
         high_thresh, _ = cv2.threshold(gray_image, 0, 255, cv2.THRESH_OTSU)
         lowThresh = 0.10 * high_thresh
 

@@ -2,6 +2,12 @@ from torchvision import transforms
 import torch
 import torch.nn as nn
 
+from src.spline_extraction.bSplineExtraction import BSplineExtraction
+from src.algorithmic_segmentation.algorithms.normalizationForSegmentation import NormalizationForSegmentation
+from src.algorithmic_segmentation.algorithms.thresholdSegmentation import ThresholdSegmentation
+from src.algorithmic_segmentation.algorithms.gaussianBlurForSegmentation import GaussianBlurForSegmentation
+from src.algorithmic_segmentation.algorithms.adaptiveThresholdSegmentation import AdaptiveThresholdSegmentation
+from src.algorithmic_segmentation.algorithms.cascadedSegmentation import CascadedSegmentation
 from src.algorithmic_segmentation.algorithms.adaptiveOtsuSegmentation import AdaptiveOtsuSegmentation
 from src.algorithmic_segmentation.algorithms.watershedSegmentation import WatershedSegmentation
 from src.algorithmic_segmentation.algorithms.cannyEdgeDetection import CannyEdgeDetection
@@ -18,9 +24,13 @@ app_path = "/Users/mitchellsylvia/SAR-Oil-Onboard/"
 
 if __name__ == "__main__":
     tuiCore = TUICore()
-    tui = TUI(tuiCore, app_path)
-    segmentation_methods = [OtsuSegmentation((21, 21)), OtsuSegmentation(None), AdaptiveOtsuSegmentation(), AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), WatershedSegmentation(9, 3)]
+    # Here are the list of segmentation methods I have run before: [OtsuSegmentation((21, 21)), OtsuSegmentation(None), AdaptiveOtsuSegmentation(), AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), WatershedSegmentation(9, 3)]
+    # segmentation_methods = [CascadedSegmentation(AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), CannyEdgeDetection())]
+    # CascadedSegmentation(GaussianBlurForSegmentation((9,9)), AdaptiveThresholdSegmentation(block_size=17, c=3), AdaptiveOtsuSegmentation((0, 0), adaptive_block_size=101, mean_bias=10))
+    segmentation_methods =  [CascadedSegmentation(NormalizationForSegmentation(), ThresholdSegmentation(55))]
     batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
+    bSplineExtractor = BSplineExtraction()
+    tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor)
     tui.startup(batchAlgorithmRunner)
 
     # deepLearningTui = DeepLearningTUI(tuiCore)

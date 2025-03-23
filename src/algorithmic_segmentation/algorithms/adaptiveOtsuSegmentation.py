@@ -19,7 +19,12 @@ class AdaptiveOtsuSegmentation(SegmentationMethod):
     
     def segment(self, image):
         # Reduce noise
-        preprocessed_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        if len(image.shape) == 2:
+            preprocessed_image = image
+        elif len(image.shape) == 3 and image.shape[2] in [3, 4]:
+            preprocessed_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            raise ValueError("Input image must have 2, 3, or 4 channels")
         if self.kernel_size is not None and self.kernel_size != (0, 0):
             preprocessed_image = self.reduce_noise(preprocessed_image)
 
