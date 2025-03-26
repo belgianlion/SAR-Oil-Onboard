@@ -31,7 +31,7 @@ if __name__ == "__main__":
     batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
     bSplineExtractor = BSplineExtraction()
     tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor)
-    tui.startup(batchAlgorithmRunner)
+    tui.startup()
 
     # deepLearningTui = DeepLearningTUI(tuiCore)
     # device_string = 'cuda' if torch.cuda.is_available() else 'cpu'

@@ -35,6 +35,3 @@ class ChunkedSARImage():
             image_white_bg = image
         return image_white_bg
 
-    @staticmethod
-    def auto_rotate_full_image():
-        

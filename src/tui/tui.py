@@ -69,13 +69,18 @@ class TUI:
                     
 
                 for image in images:
-                    splines = self.bSplineExtractor.extract_spline(image)
+                    splines = self.bSplineExtractor.extract_spline(image.image)
+                    output_folder = os.path.join(self.base_path, "spline_results")
+                    os.makedirs(output_folder, exist_ok=True)
+                    output_path = os.path.join(output_folder, f"{image.filename}_splines.png")
+
                     plt.figure()
                     plt.imshow(cv2.cvtColor(image.image, cv2.COLOR_BGR2RGB))
                     for xnew, ynew in splines:
                         plt.plot(xnew, ynew, '-', lw=2)
                     plt.title(f"Image: {image.filename}")
-                    plt.show()
+                    plt.savefig(output_path)
+                    plt.close()
 
 
             elif selected_index == 4:

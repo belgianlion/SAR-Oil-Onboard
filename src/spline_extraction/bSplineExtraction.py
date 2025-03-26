@@ -11,7 +11,7 @@ class BSplineExtraction:
     def __init__(self, num_points: int = 20):
         self.num_points = num_points
 
-    def extract_spline(self, image: np.ndarray) -> List[Tuple[float, float]]:
+    def extract_spline(self, image) -> List[Tuple[float, float]]:
         gray_image = Common.tryConvertBGRToGray(image)
         _, binary_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
         contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -30,7 +30,7 @@ class BSplineExtraction:
 
             # Fit a B-spline to the contour points
             try:
-                tck = spi.splprep([x, y], s=0, per=True)
+                tck, _ = spi.splprep([x, y], s=0, per=False)
                 xnew, ynew = spi.splev(np.linspace(0, 1, 20), tck)
                 splines.append((xnew, ynew))
             except:
