@@ -1,5 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
+import torch
+from src.models.ResNet.baseModel import BaseModel
 from src.spline_extraction.bSplineExtraction import BSplineExtraction
 from src.algorithmic_segmentation.core.imageSegmentationFormat import ImageSegmentationFormat
 from src.tui.tuiCore import TUICore
@@ -11,17 +13,17 @@ from src.tui.selectMenu import SelectMenu
 from src.algorithmic_segmentation.core.batchAlgorithmRunner import BatchAlgorithmRunner
 import glob
 import cv2
-from scipy.interpolate import interp1d
 
 from src.tui.terminalSettings import TerminalSettings
 
 
 class TUI:
-    def __init__(self, tuiCore: TUICore, base_path: str, batch_algorithm_runner: BatchAlgorithmRunner, bSplineExtractor: BSplineExtraction):
+    def __init__(self, tuiCore: TUICore, base_path: str, batch_algorithm_runner: BatchAlgorithmRunner, bSplineExtractor: BSplineExtraction, model: BaseModel):
         self.tuiCore = tuiCore
         self.base_path = base_path
         self.batch_algorithm_runner = batch_algorithm_runner
         self.bSplineExtractor = bSplineExtractor
+        self.model = model
 
     def startup(self):
         with TerminalSettings():
@@ -29,6 +31,13 @@ class TUI:
             terminal_buffer = []
             terminal_buffer.append(self.tuiCore.create_header("SAR Oil Onboard TUI"))
             terminal_buffer.append(self.tuiCore.create_message("This TUI is intended for use for Mitchell Sylvia (belgianlion)'s SAR Oil Onboard Thesis Project", TextColors.LIGHT))
+            terminal_buffer.append("")
+            terminal_buffer.append(self.tuiCore.create_message(f'PyTorch version: {torch.__version__}', TextColors.LIGHT))
+            terminal_buffer.append(self.tuiCore.create_message('*'*10, TextColors.LIGHT))
+            terminal_buffer.append(self.tuiCore.create_message(f'_CUDA version: ', TextColors.LIGHT))
+            terminal_buffer.append(self.tuiCore.create_message('*'*10, TextColors.LIGHT))
+            terminal_buffer.append(self.tuiCore.create_message(f'CUDNN version: {torch.backends.cudnn.version()}', TextColors.LIGHT))
+            terminal_buffer.append(self.tuiCore.create_message(f'Available GPU devices: {torch.cuda.device_count()}', TextColors.LIGHT))
             terminal_buffer.append("")
             TUICore.print_buffer(terminal_buffer)
             input("Press enter to continue...")
@@ -40,9 +49,20 @@ class TUI:
             selected_index = menu.run()
 
             if selected_index == 0:
-                print("Train a Model")
+                TUICore.clear_terminal()
+                self.model.train_with_k_fold()
+                terminal_buffer.append(self.tuiCore.create_message("Training complete. Press enter to continue...", TextColors.LIGHT))
+                TUICore.print_buffer(terminal_buffer)
+                input("Press enter to continue...")
+                terminal_buffer.clear()
             elif selected_index == 1:
-                print("Test a Model")
+                model_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\ResNet\resnet18_sar_cross_val.pt"
+                test_dataset_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\Samples"
+                self.model.run(test_dataset_path, model_path)
+                terminal_buffer.append(self.tuiCore.create_message("Testing complete. Press enter to continue...", TextColors.LIGHT))
+                TUICore.print_buffer(terminal_buffer)
+                input("Press enter to continue...")
+                terminal_buffer.clear()
             elif selected_index == 2:
                 TUICore.clear_terminal()
                 images = []

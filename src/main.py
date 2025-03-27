@@ -2,6 +2,8 @@ from torchvision import transforms
 import torch
 import torch.nn as nn
 
+from src.dataset_processing.pngPreprocessing import PNGProcessing
+from src.models.ResNet.customModel import CustomModel
 from src.spline_extraction.bSplineExtraction import BSplineExtraction
 from src.algorithmic_segmentation.algorithms.normalizationForSegmentation import NormalizationForSegmentation
 from src.algorithmic_segmentation.algorithms.thresholdSegmentation import ThresholdSegmentation
@@ -27,11 +29,16 @@ if __name__ == "__main__":
     # Here are the list of segmentation methods I have run before: [OtsuSegmentation((21, 21)), OtsuSegmentation(None), AdaptiveOtsuSegmentation(), AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), WatershedSegmentation(9, 3)]
     # segmentation_methods = [CascadedSegmentation(AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), CannyEdgeDetection())]
     # CascadedSegmentation(GaussianBlurForSegmentation((9,9)), AdaptiveThresholdSegmentation(block_size=17, c=3), AdaptiveOtsuSegmentation((0, 0), adaptive_block_size=101, mean_bias=10))
-    segmentation_methods =  [CascadedSegmentation(NormalizationForSegmentation(), ThresholdSegmentation(55))]
-    batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
-    bSplineExtractor = BSplineExtraction()
-    tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor)
-    tui.startup()
+    image = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_PNG_XML\output.png"
+    PNGProcessing.process_png(image)
+
+
+    # model = CustomModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\training_data", num_epochs=10)
+    # segmentation_methods =  [CascadedSegmentation(NormalizationForSegmentation(), ThresholdSegmentation(55))]
+    # batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
+    # bSplineExtractor = BSplineExtraction()
+    # tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor, model)
+    # tui.startup()
 
     # deepLearningTui = DeepLearningTUI(tuiCore)
     # device_string = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -43,7 +50,7 @@ if __name__ == "__main__":
     # torch_model.fc = nn.Linear(512, 2)
     
 
-    # model = Model(torch_model, device_string, ["layer4", "fc"], model_name)
+    # model =  (torch_model, device_string, ["layer4", "fc"], model_name)
 
     # # Transform defined as resizing the image to 224x224, and creating tensor representations of the image.
     # transform = transforms.Compose([
