@@ -17,20 +17,20 @@ class PNGProcessing():
             if image is None:
                 raise ValueError(f"Could not open or find the image: {png_path}")
             if image.shape[-1] == 4:  # Check if the image has an alpha channel
-                _, _, _, a = cv2.split(image)
-                if a.shape[0] > 10000 or a.shape[1] > 10000:  # Check if dimensions are too large
-                    resized_alpha = cv2.resize(a, (0, 0), fx=0.1, fy=0.1)  # Resize alpha channel to half its size
+                if image.shape[0] > 10000 or image.shape[1] > 10000:  # Check if dimensions are too large
+                    resized_image = cv2.resize(image, (0, 0), fx=0.1, fy=0.1)  # Resize alpha channel to half its size
                 else:
-                    resized_alpha = a  # Use original alpha channel if dimensions are manageable
-                color_alpha = cv2.cvtColor(resized_alpha, cv2.COLOR_GRAY2BGR)  # Convert to 3-channel image
-                cv2.imshow("alpha", color_alpha)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-                corners = PNGProcessing.find_angle(color_alpha)  # Find corners in the alpha channel
+                    resized_image = image  # Use original alpha channel if dimensions are manageable
+                # color_alpha = cv2.cvtColor(resized_alpha, cv2.COLOR_GRAY2BGR)  # Convert to 3-channel image
+                # cv2.imshow("alpha", color_alpha)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
+                # corners = PNGProcessing.find_angle(color_alpha)  # Find corners in the alpha channel
                 
-                cv2.imshow("Processed PNG", corners)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+                # cv2.imshow("Processed PNG", corners)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
+                chips = PNGProcessing.split_into_chips(resized_image, chip_size=400, overlap_percentage=0.5)
             return image
         except Exception as e:
             print(f"Error opening PNG file with OpenCV: {e}")
@@ -40,23 +40,66 @@ class PNGProcessing():
     def split_into_chips(image, chip_size: int = 400, overlap_percentage: float = 0.5):
         height, width = image.shape[:2]
         frame_separation = overlap_percentage * chip_size
-        num_frames_x = width / frame_separation
-        num_frames_y = height / frame_separation
         chips = []
 
-        for x_start in range(num_frames_x):
-            x_end = x_start + chip_size
-            if x_end >= width:
-                break
-            for y_start in range(num_frames_y):
-                y_end = y_start + chip_size
-                if y_end >= height:
-                    continue
+        x_start = 0
+        while x_start + chip_size <= width:
+            y_start = 0
+            while y_start + chip_size <= height:
+                chip = image[int(y_start):int(y_start + chip_size),
+                            int(x_start):int(x_start + chip_size)]
                 
+                if not PNGProcessing.is_chip_empty([chip]):
+                    cv2.imshow(f"Chip at ({int(height - chip_size)}, {int(x_start)})", chip)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+                    chips.append(chip)
+                y_start += frame_separation
 
+            # Handle the last row if it doesn't fit perfectly
+            if y_start < height:
+                chip = image[int(height - chip_size):int(height),
+                            int(x_start):int(x_start + chip_size)]
+            if not PNGProcessing.is_chip_empty([chip]):
+                cv2.imshow(f"Chip at ({int(height - chip_size)}, {int(x_start)})", chip)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                chips.append(chip)
 
+            x_start += frame_separation
 
-        if math.floor(num_frames_x) != num_frames_x:
+        # Handle the last column if it doesn't fit perfectly
+        if x_start < width:
+            y_start = 0
+            while y_start + chip_size <= height:
+                chip = image[int(y_start):int(y_start + chip_size),
+                            int(width - chip_size):int(width)]
+                if not PNGProcessing.is_chip_empty([chip]):
+                    cv2.imshow(f"Chip at ({int(height - chip_size)}, {int(x_start)})", chip)
+                    cv2.waitKey(0)
+                    cv2.destroyAllWindows()
+                    chips.append(chip)
+                y_start += frame_separation
+
+            # Handle the last row in the last column
+            if y_start < height:
+                chip = image[int(height - chip_size):int(height),
+                            int(width - chip_size):int(width)]
+            if not PNGProcessing.is_chip_empty([chip]):
+                cv2.imshow(f"Chip at ({int(height - chip_size)}, {int(x_start)})", chip)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                chips.append(chip)
+        return chips
+
+    @staticmethod
+    def is_chip_empty(chips) -> bool:
+        for i, chip in enumerate(chips):
+            if cv2.countNonZero(cv2.cvtColor(chip, cv2.COLOR_BGR2GRAY)) == 0:
+                print(f"Chip {i} is empty.")
+                return True
+            print(f"Chip {i} is not empty.")
+        return False
 
 
         
