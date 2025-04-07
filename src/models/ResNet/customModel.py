@@ -1,6 +1,7 @@
 import os
 from typing import Tuple
 from PIL import Image
+import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import transforms
@@ -10,6 +11,7 @@ from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+from src.datasets.imageChipCollection import ImageChipCollection
 from src.datasets.sarImageDataset import SARImageDataset
 from src.models.ResNet.baseModel import BaseModel
 
@@ -63,14 +65,23 @@ class CustomModel(BaseModel):
         if seed is not None:
             k_fold = KFold(n_splits=k, shuffle=shuffle, random_state=seed)
 
-        transform = v2.Compose([
+        transform_original = v2.Compose([
+            v2.Resize((224, 224)),
+            v2.ToTensor(),
+        ])
+
+        transform_augmented = v2.Compose([
             v2.RandomRotation(degrees=15, fill=(255, 255, 255)),  # Background will be white
             v2.RandomHorizontalFlip(),
             v2.Resize((224, 224)),
             v2.ToTensor(),
         ])
 
-        training_dataset = SARImageDataset(self.dataset_path, transform=transform)
+        original_dataset = SARImageDataset(self.dataset_path, transform=transform_original)
+        augmented_dataset = SARImageDataset(self.dataset_path, transform=transform_augmented)
+
+        # Combine the two datasets
+        training_dataset = torch.utils.data.ConcatDataset([original_dataset, augmented_dataset])
 
         device, criterion, optimizer = self.__training_standard_setup()
 
@@ -101,7 +112,39 @@ class CustomModel(BaseModel):
         filename = "resnet18_sar_cross_val.pt"
         base_dir = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\ResNet"
         torch.save(self.model.state_dict(), f"{base_dir}/{filename}")
-        
+
+
+    def run_on_collection(self, chip_collection: ImageChipCollection, model_weight_path: str) -> ImageChipCollection:
+        categorized_chips = ImageChipCollection(chip_collection.whole_image_width, chip_collection.whole_image_height)
+        self.model.load_state_dict(torch.load(model_weight_path, weights_only=False))
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(device)
+        self.model.eval()
+
+        for chip in chip_collection:
+            image = chip.image
+            if image is None:
+                print("Empty chip encountered, skipping...")
+                continue
+
+            # Preprocess the image
+            transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor()
+            ])
+            image = Image.fromarray(image).convert("RGB")
+            image = transform(image).unsqueeze(0)
+
+            with torch.no_grad():
+                image = image.to(device)
+                output = self.model(image)
+                probabilities = torch.nn.functional.softmax(output, dim=1)
+                predicted = torch.argmax(probabilities, dim=1).item()
+                chip.contains_oil = predicted  # Store the predicted class in the chip
+                categorized_chips.add_chip(chip)  # Add the chip to the collection\
+        return categorized_chips
+                
+            
 
     def run(self, test_dataset_path: str, model_weight_path: str):
         # Load the model

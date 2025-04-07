@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
+from src.dataset_processing.pngPreprocessing import PNGProcessing
 from src.models.ResNet.baseModel import BaseModel
 from src.spline_extraction.bSplineExtraction import BSplineExtraction
 from src.algorithmic_segmentation.core.imageSegmentationFormat import ImageSegmentationFormat
@@ -43,19 +44,36 @@ class TUI:
             input("Press enter to continue...")
             terminal_buffer.clear()
             terminal_buffer.append(self.tuiCore.create_header("What would you like to do?"))
-            options = ["Train a Model", "Test a Model", "Test Algorithmic Segmentation", "Test bSplineExtraction", "Exit"]
+            options = ["Prepare image", "Train a Model", "Test a Model", "Test Algorithmic Segmentation", "Test bSplineExtraction", "Exit"]
             selected_index = 0
             menu = SelectMenu(options, self.tuiCore, terminal_buffer)
             selected_index = menu.run()
 
             if selected_index == 0:
                 TUICore.clear_terminal()
+                terminal_buffer.append(self.tuiCore.create_header("Prepare Image"))
+                image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.png"
+                chips = PNGProcessing.split_into_chips(image_path)
+                output_folder = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\Samples"
+                os.makedirs(output_folder, exist_ok=True)
+
+                for i, chip in enumerate(chips):
+                    output_path = os.path.join(output_folder, f"chip_{i}.png")
+                    cv2.imwrite(output_path, chip)
+                    terminal_buffer.append(self.tuiCore.create_message(f"Saved chip {i} to {output_path}", TextColors.LIGHT))
+                
+                TUICore.print_buffer(terminal_buffer)
+                input("Press enter to continue...")
+                terminal_buffer.clear()
+            elif selected_index == 1:
+                TUICore.clear_terminal()
                 self.model.train_with_k_fold()
                 terminal_buffer.append(self.tuiCore.create_message("Training complete. Press enter to continue...", TextColors.LIGHT))
                 TUICore.print_buffer(terminal_buffer)
                 input("Press enter to continue...")
                 terminal_buffer.clear()
-            elif selected_index == 1:
+            elif selected_index == 2:
+                terminal_buffer.clear()
                 model_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\ResNet\resnet18_sar_cross_val.pt"
                 test_dataset_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\Samples"
                 self.model.run(test_dataset_path, model_path)
@@ -63,7 +81,7 @@ class TUI:
                 TUICore.print_buffer(terminal_buffer)
                 input("Press enter to continue...")
                 terminal_buffer.clear()
-            elif selected_index == 2:
+            elif selected_index == 3:
                 TUICore.clear_terminal()
                 images = []
                 image_folder = os.path.join(self.base_path, "Datasets", "training_data", "1")
@@ -74,7 +92,7 @@ class TUI:
                     filename = os.path.splitext(os.path.basename(image_file))[0]
                     images.append(ImageSegmentationFormat(image=image_data, filename=filename))
                 self.batch_algorithm_runner.run(images)
-            elif selected_index == 3:
+            elif selected_index == 4:
                 TUICore.clear_terminal()
                 results_folder = os.path.join(self.base_path, "results")
                 first_folder = sorted([f for f in os.listdir(results_folder) if f != '.DS_Store'])[0]
@@ -103,6 +121,6 @@ class TUI:
                     plt.close()
 
 
-            elif selected_index == 4:
+            elif selected_index == 5:
                 terminal_buffer.clear()
                 os._exit(0)
