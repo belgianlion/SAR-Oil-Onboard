@@ -11,6 +11,7 @@ from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+from src.datasets.oilSpillImage import OilSpillImage
 from src.datasets.imageChipCollection import ImageChipCollection
 from src.datasets.sarImageDataset import SARImageDataset
 from src.models.ResNet.baseModel import BaseModel
@@ -114,14 +115,13 @@ class CustomModel(BaseModel):
         torch.save(self.model.state_dict(), f"{base_dir}/{filename}")
 
 
-    def run_on_collection(self, chip_collection: ImageChipCollection, model_weight_path: str) -> ImageChipCollection:
-        categorized_chips = ImageChipCollection(chip_collection.whole_image_width, chip_collection.whole_image_height)
+    def run_on_collection(self, oil_spill_image: OilSpillImage, model_weight_path: str):
         self.model.load_state_dict(torch.load(model_weight_path, weights_only=False))
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(device)
         self.model.eval()
 
-        for chip in chip_collection:
+        for chip in oil_spill_image.chips:
             image = chip.image
             if image is None:
                 print("Empty chip encountered, skipping...")
@@ -141,8 +141,7 @@ class CustomModel(BaseModel):
                 probabilities = torch.nn.functional.softmax(output, dim=1)
                 predicted = torch.argmax(probabilities, dim=1).item()
                 chip.contains_oil = predicted  # Store the predicted class in the chip
-                categorized_chips.add_chip(chip)  # Add the chip to the collection\
-        return categorized_chips
+                oil_spill_image.class_1_chips.add_chip(chip)  # Add the chip to the collection\
                 
             
 

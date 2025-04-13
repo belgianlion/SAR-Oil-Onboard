@@ -4,31 +4,18 @@ import torch
 import torch.nn as nn
 import cv2
 
+from src.datasets.oilSpillImage import OilSpillImage
 from src.datasets.imageChipCollection import ImageChipCollection, ImageChip
 from src.dataset_processing.pngPreprocessing import PNGProcessing
 from src.models.ResNet.customModel import CustomModel
-from src.spline_extraction.bSplineExtraction import BSplineExtraction
-from src.algorithmic_segmentation.algorithms.normalizationForSegmentation import NormalizationForSegmentation
-from src.algorithmic_segmentation.algorithms.thresholdSegmentation import ThresholdSegmentation
-from src.algorithmic_segmentation.algorithms.gaussianBlurForSegmentation import GaussianBlurForSegmentation
-from src.algorithmic_segmentation.algorithms.adaptiveThresholdSegmentation import AdaptiveThresholdSegmentation
-from src.algorithmic_segmentation.algorithms.cascadedSegmentation import CascadedSegmentation
-from src.algorithmic_segmentation.algorithms.adaptiveOtsuSegmentation import AdaptiveOtsuSegmentation
-from src.algorithmic_segmentation.algorithms.watershedSegmentation import WatershedSegmentation
-from src.algorithmic_segmentation.algorithms.cannyEdgeDetection import CannyEdgeDetection
-from src. algorithmic_segmentation.core.batchAlgorithmRunner import BatchAlgorithmRunner
-from src.algorithmic_segmentation.algorithms.otsuSegmentation import OtsuSegmentation
-from src.datasets.sarImageDataset import SARImageDataset
-from src.models.model import Model
-from src.tui.selectMenu import SelectMenu
 from src.tui.tui import TUI
 from src.tui.tuiCore import TUICore
-from src.tui.deepLearningTui import DeepLearningTUI
 
 app_path = "/Users/mitchellsylvia/SAR-Oil-Onboard/"
 
-def combine_chips(chips: ImageChipCollection) -> np.ndarray:
-    final_image = np.zeros((chips.whole_image_height, chips.whole_image_width), dtype=np.uint8)
+def combine_chips(oil_spill_image: OilSpillImage) -> np.ndarray:
+    chips = oil_spill_image.class_1_chips
+    final_image = np.zeros((oil_spill_image.jpg_image.height(), oil_spill_image.jpg_image.width()), dtype=np.uint8)
     for chip in chips:
         if chip.contains_oil == 1:
             x_start = chip.x_start
@@ -45,17 +32,22 @@ if __name__ == "__main__":
     # segmentation_methods = [CascadedSegmentation(AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), CannyEdgeDetection())]
     # CascadedSegmentation(GaussianBlurForSegmentation((9,9)), AdaptiveThresholdSegmentation(block_size=17, c=3), AdaptiveOtsuSegmentation((0, 0), adaptive_block_size=101, mean_bias=10))
 
-    image = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.png"
+    jpg_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.jpg"
+    png_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.png"
 
-    chips = PNGProcessing.split_into_chips(image)
+    oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, 0.5, with_rotation=True, padding=5)
+    oil_spill_image.split_jpg_into_chips(chip_size=400, overlap_percentage=0.5)
 
     model = CustomModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\training_data", num_epochs=10)
 
+    cv2.imshow("Original Image", oil_spill_image.jpg_image.image)
+    cv2.waitKey(0)
+
     # Run the chip through the model
-    output = model.run_on_collection(chips, r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\ResNet\resnet18_sar_cross_val.pt")
+    model.run_on_collection(oil_spill_image, r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\ResNet\resnet18_sar_cross_val.pt")
 
     # Filter chips to only include those with contains_oil = 1
-    combined_chips = combine_chips(output)
+    combined_chips = combine_chips(oil_spill_image)
 
     cv2.imshow("Filtered Chips", combined_chips)
     cv2.waitKey(0)

@@ -35,52 +35,6 @@ class PNGProcessing():
         return chips
         
     @staticmethod
-    def _split_image_into_chips(image, chip_size: int = 400, overlap_percentage: float = 0.5):
-        height, width = image.shape[:2]
-        frame_separation = overlap_percentage * chip_size
-        chips = ImageChipCollection(width, height)  # Assuming ImageChipCollection is defined elsewhere
-
-        x_start = 0
-        while x_start + chip_size <= width:
-            y_start = 0
-            while y_start + chip_size <= height:
-
-                chip = ImageChip(int(x_start), int(y_start), chip_size, chip_size, image[int(y_start):int(y_start + chip_size),
-                            int(x_start):int(x_start + chip_size)])
-                
-                chips.try_add_chip_bw(chip)
-                y_start += frame_separation
-
-            # Handle the last row if it doesn't fit perfectly
-            if y_start < height:
-                chip = ImageChip(int(x_start), int(height - chip_size), chip_size, chip_size,
-                            image[int(height - chip_size):int(height),
-                            int(x_start):int(x_start + chip_size)])
-                chips.try_add_chip_bw(chip)
-
-            x_start += frame_separation
-
-        # Handle the last column if it doesn't fit perfectly
-        if x_start < width:
-            y_start = 0
-            while y_start + chip_size <= height:
-                chip = ImageChip(int(width - chip_size), int(y_start), chip_size, chip_size,
-                                image[int(y_start):int(y_start + chip_size),
-                                int(width - chip_size):int(width)])
-                chips.try_add_chip_bw(chip)
-                y_start += frame_separation
-
-            # Handle the last row in the last column
-            if y_start < height:
-                chip = ImageChip(int(width - chip_size), int(height - chip_size), chip_size, chip_size,
-                                image[int(height - chip_size):int(height),
-                                int(width - chip_size):int(width)])
-
-                chips.try_add_chip_bw(chip)
-        return chips
-
-        
-    @staticmethod
     def find_angle(image, padding=5):
         grey = Common.tryConvertBGRToGray(image)
 
