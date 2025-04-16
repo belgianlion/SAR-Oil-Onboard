@@ -13,8 +13,14 @@ class BSplineExtraction:
 
     def extract_spline(self, image) -> List[Tuple[float, float]]:
         gray_image = Common.tryConvertBGRToGray(image)
-        _, binary_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
-        contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+        _, binary_image = cv2.threshold(blurred_image, 127, 255, cv2.THRESH_BINARY)
+        inverted_image = cv2.bitwise_not(binary_image)
+        # cv2.imshow("Binary Chip", inverted_image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        contours, _ = cv2.findContours(inverted_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         splines = []
         for contour in contours:
@@ -37,3 +43,16 @@ class BSplineExtraction:
                 print("Unable to extract spline from current line, going to next.")
                 continue
         return splines
+    
+    @staticmethod
+    def try_add_splines_to_image(image: np.ndarray, splines):
+        if len(image.shape) == 2:  # Check if the image is grayscale
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        if not len(splines):
+            return image
+        for spline in splines:
+            for i in range(len(spline[0]) - 1):
+                pt1 = (int(spline[0][i]), int(spline[1][i]))
+                pt2 = (int(spline[0][i + 1]), int(spline[1][i + 1]))
+                cv2.line(image, pt1, pt2, (0, 255, 0), 2)
+        return image

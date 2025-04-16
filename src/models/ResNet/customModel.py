@@ -141,7 +141,7 @@ class CustomModel(BaseModel):
                 probabilities = torch.nn.functional.softmax(output, dim=1)
                 predicted = torch.argmax(probabilities, dim=1).item()
                 chip.contains_oil = predicted  # Store the predicted class in the chip
-                oil_spill_image.class_1_chips.add_chip(chip)  # Add the chip to the collection\
+                oil_spill_image.classed_chips.add_chip(chip)  # Add the chip to the collection\
                 
             
 

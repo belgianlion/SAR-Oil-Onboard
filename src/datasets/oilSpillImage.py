@@ -13,7 +13,7 @@ class OilSpillImage():
         self.jpg_image = JpgImage(jpg_image_path)
 
         self.chips = ImageChipCollection()
-        self.class_1_chips = ImageChipCollection()
+        self.classed_chips = ImageChipCollection()
         if with_rotation:
             angle = self.__find_angle()
             self.jpg_image.image = OilSpillImage.__rotate_image(self.jpg_image.image, angle, padding)
