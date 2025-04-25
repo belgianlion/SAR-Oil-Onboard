@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.interpolate as spi
 
+from src.spline_extraction.spline import Spline
 from src.algorithmic_segmentation.algorithms.common import Common
 
 class BSplineExtraction:
@@ -16,43 +17,43 @@ class BSplineExtraction:
         blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
         _, binary_image = cv2.threshold(blurred_image, 127, 255, cv2.THRESH_BINARY)
         inverted_image = cv2.bitwise_not(binary_image)
-        # cv2.imshow("Binary Chip", inverted_image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
 
         contours, _ = cv2.findContours(inverted_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         splines = []
         for contour in contours:
-            # Finds unique contours within the image and creates a spline from it
-            # This process was found with the help of github copilot.
-            # None of the code worked out of the box, and was modified by me
-            if contour.shape[0] < 2:  # Ignore contours with fewer than 2 points
+            if contour.shape[0] < 2:
                 continue
 
-            contour = np.squeeze(contour)  # Only remove single dimensions
+            contour = np.squeeze(contour)
             x = contour[:, 0]
             y = contour[:, 1]
 
-            # Fit a B-spline to the contour points
             try:
                 tck, _ = spi.splprep([x, y], s=0, per=False)
-                xnew, ynew = spi.splev(np.linspace(0, 1, 20), tck)
-                splines.append((xnew, ynew))
+                linspace = np.linspace(0, 1, 20)
+                xnew, ynew = spi.splev(linspace, tck)
+                spline = Spline(list(zip(xnew, ynew)), tck, linspace)
+                splines.append(spline)
             except:
                 print("Unable to extract spline from current line, going to next.")
                 continue
         return splines
     
     @staticmethod
-    def try_add_splines_to_image(image: np.ndarray, splines):
-        if len(image.shape) == 2:  # Check if the image is grayscale
+    def try_add_splines_to_image(image: np.ndarray, splines: List[Spline], curve_point_count: int = 100):
+        if len(image.shape) == 2:
             image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
         if not len(splines):
             return image
+        
         for spline in splines:
-            for i in range(len(spline[0]) - 1):
-                pt1 = (int(spline[0][i]), int(spline[1][i]))
-                pt2 = (int(spline[0][i + 1]), int(spline[1][i + 1]))
-                cv2.line(image, pt1, pt2, (0, 255, 0), 2)
+            # Based on https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splrep.html#scipy.interpolate.splrep
+            # & with some help from copilot to understand what everything does
+            fidelity = np.linspace(0, 1, curve_point_count)
+            smooth_x, smooth_y = spi.splev(fidelity, spline.tck)
+
+            points = np.column_stack((smooth_x, smooth_y)).astype(np.int32)
+            cv2.polylines(image, [points], False, (0, 255, 0), 2)
+            
         return image
