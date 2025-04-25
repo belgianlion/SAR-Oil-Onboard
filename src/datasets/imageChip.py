@@ -9,3 +9,4 @@ class ImageChip:
     y_start: int
     image: np.ndarray
     contains_oil: bool = False
+    mask: Any = None
