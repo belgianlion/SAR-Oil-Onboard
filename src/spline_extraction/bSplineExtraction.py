@@ -20,7 +20,7 @@ class BSplineExtraction:
 
         contours, _ = cv2.findContours(inverted_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-        splines = []
+        tcks = []
         for contour in contours:
             if contour.shape[0] < 2:
                 continue
@@ -31,14 +31,25 @@ class BSplineExtraction:
 
             try:
                 tck, _ = spi.splprep([x, y], s=0, per=False)
-                linspace = np.linspace(0, 1, 20)
-                xnew, ynew = spi.splev(linspace, tck)
-                spline = Spline(list(zip(xnew, ynew)), tck, linspace)
-                splines.append(spline)
+                tcks.append(tck)
             except:
                 print("Unable to extract spline from current line, going to next.")
                 continue
-        return splines
+        return tcks
+    
+    @staticmethod
+    def create_smooth_splines(tcks, curve_point_count: int = 100):
+        
+        all_splines = []
+            # Based on https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splrep.html#scipy.interpolate.splrep
+            # & with some help from copilot to understand what everything does
+        for tck in tcks:
+            fidelity = np.linspace(0, 1, curve_point_count)
+            smooth_x, smooth_y = spi.splev(fidelity, tck)
+            points = [smooth_x, smooth_y]
+            out_spline = Spline(points=points, tck=tck, linspace=fidelity)
+            all_splines.append(out_spline)
+        return all_splines
     
     @staticmethod
     def try_add_splines_to_image(image: np.ndarray, splines: List[Spline], curve_point_count: int = 100):

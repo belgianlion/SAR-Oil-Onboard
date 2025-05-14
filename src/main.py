@@ -5,6 +5,10 @@ import torch
 import torch.nn as nn
 import cv2
 
+from src.algorithmic_segmentation.algorithms.cascadedSegmentation import CascadedSegmentation
+from src.algorithmic_segmentation.algorithms.normalizationForSegmentation import NormalizationForSegmentation
+from src.algorithmic_segmentation.algorithms.thresholdSegmentation import ThresholdSegmentation
+from src.algorithmic_segmentation.core.batchAlgorithmRunner import BatchAlgorithmRunner
 from src.models.Segmentation.segmentationModel import SegmentationModel
 from src.spline_extraction.bSplineExtraction import BSplineExtraction
 from src.datasets.oilSpillImage import OilSpillImage
@@ -30,33 +34,60 @@ def combine_chips(oil_spill_image: OilSpillImage) -> np.ndarray:
 def combine_masks(oil_spill_image: OilSpillImage) -> np.ndarray:
     chips = oil_spill_image.chips
     final_mask = np.zeros((oil_spill_image.jpg_image.height(), oil_spill_image.jpg_image.width()), dtype=np.uint8)
+    chip_count = 0
     for chip in chips:
         if chip.contains_oil == 1 and chip.mask is not None:
+            chip_count += 1
+            # Save each chip's mask with a unique filename
+            
             x_start = chip.x_start
             y_start = chip.y_start
             mask = chip.mask
-            final_mask[y_start:y_start + mask.shape[0], x_start:x_start + mask.shape[1]] = mask
+            if chip_count == 15:
+                scaled_mask = (mask * 255).astype(np.uint8)
+                _, binary_mask = cv2.threshold(scaled_mask, 1, 255, cv2.THRESH_BINARY)
+                # cv2.imwrite(fr"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\chip_mask_{chip_count}.png", cv2.bitwise_not(binary_mask))
+                # cv2.imwrite(fr"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\chip_{chip_count}.png", chip.image)
+            x_end = x_start + mask.shape[1]
+            y_end = y_start + mask.shape[0]
+            existing_mask = final_mask[y_start:y_end, x_start:x_end]
+            final_mask[y_start:y_end, x_start:x_end] = np.maximum(existing_mask, mask)
     return final_mask
         
-
+def get_size(obj):
+    size = sys.getsizeof(obj)
+    if isinstance(obj, (list, tuple)):
+        size += sum(get_size(item) for item in obj)
+    elif isinstance(obj, dict):
+        size += sum(get_size(k) + get_size(v) for k, v in obj.items())
+    return size
 
 if __name__ == "__main__":
+
+    
     tuiCore = TUICore()
+
+    # model = CustomModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\training_data", num_epochs=10)
+    # segmentation_methods =  [CascadedSegmentation(NormalizationForSegmentation(), ThresholdSegmentation(55))]
+    # batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
+    # bSplineExtractor = BSplineExtraction()
+    # tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor, model)
+    # tui.startup()
     # Here are the list of segmentation methods I have run before: [OtsuSegmentation((21, 21)), OtsuSegmentation(None), AdaptiveOtsuSegmentation(), AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), WatershedSegmentation(9, 3)]
     # segmentation_methods = [CascadedSegmentation(AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), CannyEdgeDetection())]
     # CascadedSegmentation(GaussianBlurForSegmentation((9,9)), AdaptiveThresholdSegmentation(block_size=17, c=3), AdaptiveOtsuSegmentation((0, 0), adaptive_block_size=101, mean_bias=10))
 
-    jpg_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.jpg"
-    png_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.png"
-    xml_jpg_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.jpg.aux.xml"
+    jpg_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.jpg"
+    png_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.png"
+    xml_jpg_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.jpg.aux.xml"
 
-    oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, xml_jpg_image_path, 0.4, with_rotation=True, padding=10)
+    oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, xml_jpg_image_path, 0.4, with_rotation=True, margin=10)
     oil_spill_image.split_jpg_into_chips(chip_size=400, overlap_percentage=0.5)
 
-    model = SegmentationModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\Segmentation\weights.pt")
+    model = SegmentationModel("/mnt/sd/SAR-Oil-Onboard/src/models/Segmentation/weights.pt")
 
     # Run the chip through the model
-    model.run_on_collection(oil_spill_image.chips)
+    model.run_on_collection(oil_spill_image.chips)c
 
     # Extract Splines
     bspline_extractor = BSplineExtraction()
@@ -76,15 +107,26 @@ if __name__ == "__main__":
     _, binary_mask = cv2.threshold(scaled_mask, 1, 255, cv2.THRESH_BINARY)
     inverted_mask = cv2.bitwise_not(binary_mask)
     blurred_mask = cv2.GaussianBlur(inverted_mask, (9,9), 0)
-    splines = bspline_extractor.extract_spline(blurred_mask)
-    spline_image = BSplineExtraction.try_add_splines_to_image(blurred_mask, splines)
-    lat_long_data = oil_spill_image.map_location(splines)
+    tcks = bspline_extractor.extract_spline(blurred_mask)
+
+
+    
+    smoothed_spline = BSplineExtraction.create_smooth_splines(tcks)
+    spline_image = BSplineExtraction.try_add_splines_to_image(blurred_mask, smoothed_spline)
+    lat_long_data = oil_spill_image.map_location(smoothed_spline)
+    mapped_tck = oil_spill_image.map_tcks(tcks)
+    print(len(lat_long_data))
 
     # Get size in bytes
-    lat_long_size = lat_long_data.nbytes if isinstance(lat_long_data, np.ndarray) else sys.getsizeof(lat_long_data)
+    lat_long_size = lat_long_data[0].nbytes + lat_long_data[1].nbytes
+    mapped_tck_size = get_size(mapped_tck)
+    
+
     print(f"Spline image size: {spline_image.nbytes} bytes")  # For numpy arrays
-    print(f"Lat long data size: {lat_long_size} bytes")
-    print(f"Percentage reduction of: {((spline_image.nbytes-lat_long_size)/spline_image.nbytes)*100}")
+    print(f"Lat long interpolated data size: {lat_long_size} bytes")
+    print(f"Lat long tck size: {mapped_tck_size} bytes")
+    print(f"Percentage reduction of: {((spline_image.nbytes-mapped_tck_size)/spline_image.nbytes)*100} for tck")
+    print(f"Percentage reduction of: {((spline_image.nbytes-lat_long_size)/spline_image.nbytes)*100} for interpolated")
 
     cv2.imshow("Splines", spline_image)
     cv2.waitKey(0)
@@ -93,10 +135,5 @@ if __name__ == "__main__":
     # Display or process the filtered chips
     
 
-    # model = CustomModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\training_data", num_epochs=10)
-    # segmentation_methods =  [CascadedSegmentation(NormalizationForSegmentation(), ThresholdSegmentation(55))]
-    # batchAlgorithmRunner = BatchAlgorithmRunner(app_path, segmentation_methods, tuiCore, samples=5)
-    # bSplineExtractor = BSplineExtraction()
-    # tui = TUI(tuiCore, app_path, batchAlgorithmRunner, bSplineExtractor, model)
-    # tui.startup()
+    
 

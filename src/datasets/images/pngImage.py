@@ -43,22 +43,22 @@ class PngImage(BaseImage):
         upper_right = None
         lower_left = None
         lower_right = None
-        # Find upper left
+        # Find upper right
         for i in range(height):
             for j in range(width):
-                if grey[i, j] != 0:
-                    upper_left = np.array([j, i, 1], dtype=np.float32)
-                    break
-            if upper_left is not None:
-                break
-
-        # Find upper right
-        for j in range(width):
-            for i in range(height):
                 if grey[i, j] != 0:
                     upper_right = np.array([j, i, 1], dtype=np.float32)
                     break
             if upper_right is not None:
+                break
+
+        # Find upper left
+        for j in range(width):
+            for i in range(height):
+                if grey[i, j] != 0:
+                    upper_left = np.array([j, i, 1], dtype=np.float32)
+                    break
+            if upper_left is not None:
                 break
 
         # Find lower left
@@ -80,3 +80,16 @@ class PngImage(BaseImage):
                 break
 
         self.corner_points = np.vstack([upper_left, upper_right, lower_left, lower_right])
+        upper_left_point = (int(upper_left[0]), int(upper_left[1]))
+        upper_right_point = (int(upper_right[0]), int(upper_right[1]))
+        lower_left_point = (int(lower_left[0]), int(lower_left[1]))
+        lower_right_point = (int(lower_right[0]), int(lower_right[1]))
+        color = (0, 255, 0)
+        thickness = 100
+        out_img = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        out_img = cv2.cvtColor(out_img, cv2.COLOR_GRAY2BGR)
+        cv2.line(out_img, upper_left_point, upper_right_point, color, thickness)
+        cv2.line(out_img, upper_left_point, lower_left_point, color, thickness)
+        cv2.line(out_img, lower_right_point, upper_right_point, color, thickness)
+        cv2.line(out_img, lower_right_point, lower_left_point, color, thickness)
+        # cv2.imwrite(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\edges_of_image.png", out_img)

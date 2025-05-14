@@ -13,31 +13,57 @@ MAX_SIZE = 32767
 
 class OilSpillImage():
 
-    def __init__(self, png_image_path: str, jpg_image_path: str, xml_jpg_image_path: str, relative_scale: float = 1.0, with_rotation: bool = False, padding: int = 0):
+    def __init__(self, png_image_path: str, jpg_image_path: str, xml_jpg_image_path: str, relative_scale: float = 1.0, with_rotation: bool = False, margin: int = 10):
+        '''
+        Initializes an Oil Spill Image object. Used in preprocessing and mapping of metadata for a segmentation model
+        
+        Parameters
+        ----------
+        png_image_path : str
+            The path to the png image to process. A trasparency layer is required for proper alignment of the inscribed
+            SAR image
+        jpg_image_path : str
+            The path to the JPG image to process. This image is utilzied for segmentation and other processes, as it
+            circumvents any overhead associated with converting the transparency layers of the PNG, and avoids artifacting
+            such as transparency within the inscribed SAR image. GDAL can handle that more accurately.
+        xml_jpg_image_path : str
+            The path to the XML file housing metadata for the JPG image. The relevant metadata can be found within the
+            imageXmlData.py file and its enclosed ImageXmlData class.
+        relative_scale : float, default 1.0
+            This is a float value that represents the relative scale that should be applied AFTER all automatic transformations
+            are applied (such as those applied when with_rotation is True). This is useful for scaling the image such that the 
+            chips that are extracted match well with those used in training the segmentation or classification models.
+        with_rotation : bool, default False
+            This bool determines whether the image should be rotated such that any black borders should be removed. This aligns
+            the image better with the frame
+        margin : int, default 10
+            This value determines the margin that should be added surrounding the image. This is useful in the common case where
+            the SAR image is not a perfect rectangle, and may get clipped on the edges. The recommended margin is 10 for tests
+            where the margin is unknown
+        '''
         self.png_image = PngImage(png_image_path)
         self.jpg_image = JpgImage(jpg_image_path)
+        # cv2.imwrite(fr"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\raw.png", cv2.resize(self.jpg_image.image, (0, 0), fx=0.2, fy=0.2))
         self.xml_data = ImageXmlData(xml_jpg_image_path)
         self.inverse_transformation_matrix = None
 
         self.chips = ImageChipCollection()
         self.classed_chips = ImageChipCollection()
         if with_rotation:
-            base_scale_matrix, scaled_dims= self.__get_base_scale_matrix(padding) 
+            base_scale_matrix, scaled_dims= self.__get_base_scale_matrix(margin) 
             scaled_image = cv2.resize(self.jpg_image.image, (scaled_dims[1], scaled_dims[0]))
             new_corners = OilSpillImage.__apply_transform_to_points(self.png_image.corner_points, base_scale_matrix)
 
-            transformation_matrix, dimensions = OilSpillImage.__generate_matrix(scaled_image, self.png_image.find_angle(), padding)
+            transformation_matrix, dimensions = OilSpillImage.__generate_matrix(scaled_image, self.png_image.find_angle(), margin)
             new_corners = OilSpillImage.__apply_transform_to_points(new_corners, transformation_matrix)
             transformed_image = cv2.warpAffine(scaled_image, transformation_matrix, (dimensions[1], dimensions[0]))
 
             crop_shift_matrix, dimensions = OilSpillImage.__crop_from_corners(new_corners)
-            cropped_image = cv2.warpAffine(transformed_image, crop_shift_matrix, (dimensions[1]+padding, dimensions[0]+padding))
+            cropped_image = cv2.warpAffine(transformed_image, crop_shift_matrix, (dimensions[1]+margin, dimensions[0]+margin))
 
             display_scale = 0.25
             scaled_cropped = cv2.resize(cropped_image, (0, 0), fx=display_scale, fy=display_scale)
-            cv2.imshow("scaled_cropped_image", scaled_cropped)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            # cv2.imwrite(fr"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\transformed.png", scaled_cropped)
             self.jpg_image.image = cropped_image
             self.transformation_matrix = OilSpillImage.__combine_matricies([base_scale_matrix, transformation_matrix, crop_shift_matrix])
             
@@ -45,6 +71,19 @@ class OilSpillImage():
 
 
     def split_jpg_into_chips(self, chip_size: int = 400, overlap_percentage: float = 0.5):
+        '''
+        Splits the JPG loaded in the constructor into chips for the segmentation models to process. Saves the chips
+        to the self.chips variable
+
+        Parameters
+        ----------
+        chip_size : int, default 400
+            The size of the chips in both the x and y direction
+        overlap_percentage : float, default 0.5
+            The amount of overlap between chips. This is a relative percentage to the chip_size (i.e. the default 0.5
+            with the default 400 for chip_size would result in 200 pixels overlap in both the x and y)
+
+        '''
         image_content = self.jpg_image.try_convert_to_grayscale()
         frame_separation = overlap_percentage * chip_size
         height, width = image_content.shape[:2]
@@ -84,16 +123,30 @@ class OilSpillImage():
             x_start = width - chip_size
             split_vertically(y_start, x_start)
 
-        # rotated_image = OilSpillImage.__rotate_images(self.png_image, angle)
-        # return rotated_image
+    def __get_base_scale_matrix(self, margin: int) -> Tuple[np.ndarray, Tuple[int, int]]:
+        '''
+        Private method: gets the base scale matrix required for any other image processing. The resulting matrix 
+        scales the provided SAR JPG image such that it falls within OpenCV's 32767 (int16) single-axis dimension
+        limit
 
-    def __get_base_scale_matrix(self, padding=0):
+        Parameters
+        ----------
+        margin : int
+            The margin that should be accounted for when scaling the image
+
+        Returns
+        -------
+        scale_matrix : np.ndarray
+            The matrix to be used in the transformation of the image to the final fitting size
+        (scaled_height, scaled_width) : Tuple[int, int]
+            The final height and width of the resulting scaled image
+        '''
         height, width = self.jpg_image.image.shape[:2]
 
         scale = 1.0
-        if width + 2*padding > MAX_SIZE or height + 2*padding > MAX_SIZE:
-            sx = MAX_SIZE / (width + 2*padding)
-            sy = MAX_SIZE / (height + 2*padding)
+        if width + 2*margin > MAX_SIZE or height + 2*margin > MAX_SIZE:
+            sx = MAX_SIZE / (width + 2*margin)
+            sy = MAX_SIZE / (height + 2*margin)
             scale = min(sx, sy)
             scale_matrix = np.array([[scale, 0, 0], [0, scale, 0]])
             scaled_height = int(height * scale)
@@ -114,10 +167,11 @@ class OilSpillImage():
             combined_matrix = np.matmul(matrix, combined_matrix)
         return combined_matrix
     
-    def map_location(self, splines: List[Spline]) -> List[Tuple[float, float]]:
+    def map_location(self, splines: List[Spline]) -> Tuple[List[float], List[float]]:
         if not len(splines):
             return
-        lat_long_positions = []
+        lats = np.array([])
+        longs = np.array([])
         for spline in splines:
             for i in range(len(spline.points[0])):
                 rearranged_point = [int(spline.points[0][i]), int(spline.points[1][i])]
@@ -125,8 +179,29 @@ class OilSpillImage():
                 xml_data = self.xml_data
                 longitude = xml_data.x_origin + (xml_data.pixel_width * point_on_original[0]) + (xml_data.x_rotation * point_on_original[1]) 
                 latitude = xml_data.y_origin + (xml_data.y_rotation * point_on_original[0]) + (xml_data.pixel_height * point_on_original[1])
-                lat_long_positions.append((latitude, longitude))
-        return lat_long_positions
+                lats = np.append(lats, latitude)
+                longs = np.append(longs, longitude)
+        return (lats, longs)
+    
+    def map_tcks(self, tcks):
+        mapped_tcks = []
+        for tck in tcks:
+            coefficients = tck[1]
+            mapped_coefficients = [[],[]]
+            updated_tck = list(tck)
+            for i in range(len(coefficients[0])):
+                point = np.hstack([[coefficients[0][i], coefficients[1][i], 1]])
+                transformed = self.get_inverse_transform(point)
+                xml_data = self.xml_data
+                longitude = xml_data.x_origin + (xml_data.pixel_width * transformed[0]) + (xml_data.x_rotation * transformed[1]) 
+                latitude = xml_data.y_origin + (xml_data.y_rotation * transformed[0]) + (xml_data.pixel_height * transformed[1])
+                mapped_coefficients[0].append(longitude)
+                mapped_coefficients[1].append(latitude)
+            updated_tck[1] = mapped_coefficients
+            mapped_tcks.append(updated_tck)
+        return mapped_tcks
+        
+
 
     def get_inverse_transform(self, point):
         if self.inverse_transformation_matrix is None:
@@ -136,7 +211,8 @@ class OilSpillImage():
             point = np.array([point])
         if point.shape[1] == 2:
             point = np.hstack([point, np.ones((point.shape[0], 1))])
-        return np.dot(point, self.inverse_transformation_matrix.T)[0]
+        transposed_transformation = self.inverse_transformation_matrix.T
+        return np.dot(point, transposed_transformation)[0]
 
     def __get_inverse_transform_matrix(self):
         if self.transformation_matrix is None:
