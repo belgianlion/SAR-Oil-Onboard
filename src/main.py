@@ -81,7 +81,7 @@ if __name__ == "__main__":
     png_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.png"
     xml_jpg_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.jpg.aux.xml"
 
-    oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, xml_jpg_image_path, 0.4, with_rotation=True, margin=10)
+    oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, xml_jpg_image_path, 1, with_rotation=True, margin=10)
     oil_spill_image.split_jpg_into_chips(chip_size=400, overlap_percentage=0.5)
 
     model = SegmentationModel("/mnt/sd/SAR-Oil-Onboard/src/models/Segmentation/weights.pt")
