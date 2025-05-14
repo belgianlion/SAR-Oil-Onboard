@@ -1,16 +1,9 @@
 from abc import abstractmethod
-from PIL import Image
-import numpy as np
 import cv2
 
 class BaseImage:
     def __init__(self, path: str):
-        Image.MAX_IMAGE_PIXELS = None
-        image = Image.open(path).convert('LA')
-        print("Image loaded")
-        image = image.resize((image.width // 4, image.height // 4))
-        self.image = np.array(image)
-        print("Image allocated")
+        self.image = cv2.imread(path)
 
     def width(self):
         return self.image.shape[1]
