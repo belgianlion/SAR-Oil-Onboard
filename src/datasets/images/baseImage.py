@@ -6,7 +6,7 @@ import cv2
 class BaseImage:
     def __init__(self, path: str):
         Image.MAX_IMAGE_PIXELS = None
-        image = Image.resize((image.width // 4, image.height // 4)).open(path).convert('LA')
+        image = Image.open(path).resize((image.width // 4, image.height // 4)).convert('LA')
         self.image = np.array(image)
 
     def width(self):
