@@ -87,7 +87,7 @@ if __name__ == "__main__":
     model = SegmentationModel("/mnt/sd/SAR-Oil-Onboard/src/models/Segmentation/weights.pt")
 
     # Run the chip through the model
-    model.run_on_collection(oil_spill_image.chips)c
+    model.run_on_collection(oil_spill_image.chips)
 
     # Extract Splines
     bspline_extractor = BSplineExtraction()
