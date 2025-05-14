@@ -1,9 +1,13 @@
 from abc import abstractmethod
 import cv2
+from PIL import Image
+import numpy as np
 
 class BaseImage:
     def __init__(self, path: str):
-        self.image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        image = Image.open(path).convert("LA")
+        image = image.resize((image.width // 4, image.height // 4))
+        self.image = np.array(image)
 
     def width(self):
         return self.image.shape[1]
