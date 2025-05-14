@@ -3,8 +3,7 @@ import cv2
 
 class BaseImage:
     def __init__(self, path: str):
-        image = cv2.imread(path)
-        self.image = cv2.resize(image, cv2.IMREAD_REDUCED_COLOR_2)
+        self.image = cv2.imread(path, cv2.IMREAD_REDUCED_COLOR_2)
 
     def width(self):
         return self.image.shape[1]
