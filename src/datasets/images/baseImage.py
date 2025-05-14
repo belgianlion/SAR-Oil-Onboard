@@ -5,7 +5,7 @@ import numpy as np
 
 class BaseImage:
     def __init__(self, path: str):
-        image = Image.open(path).resize((image.width // 4, image.height // 4)).convert("LA")
+        image = Image.open(path).resize((image.width // 8, image.height // 8)).convert("LA")
         self.image = np.array(image)
 
     def width(self):
