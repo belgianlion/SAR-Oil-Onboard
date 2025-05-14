@@ -43,6 +43,7 @@ class OilSpillImage():
         '''
         self.png_image = PngImage(png_image_path)
         self.jpg_image = JpgImage(jpg_image_path)
+        print("Images allocated")
         # cv2.imwrite(fr"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\results\raw.png", cv2.resize(self.jpg_image.image, (0, 0), fx=0.2, fy=0.2))
         self.xml_data = ImageXmlData(xml_jpg_image_path)
         self.inverse_transformation_matrix = None

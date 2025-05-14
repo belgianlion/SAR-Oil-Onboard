@@ -9,6 +9,7 @@ class BaseImage:
         image = Image.open(path).convert('LA')
         image = image.resize((image.width // 4, image.height // 4))
         self.image = np.array(image)
+        print("Image allocated")
 
     def width(self):
         return self.image.shape[1]
