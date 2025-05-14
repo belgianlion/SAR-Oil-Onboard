@@ -7,6 +7,7 @@ class BaseImage:
     def __init__(self, path: str):
         Image.MAX_IMAGE_PIXELS = None
         image = Image.open(path).convert('LA')
+        print("Image loaded")
         image = image.resize((image.width // 4, image.height // 4))
         self.image = np.array(image)
         print("Image allocated")
