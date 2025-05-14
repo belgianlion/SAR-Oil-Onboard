@@ -152,6 +152,8 @@ class OilSpillImage():
             scale_matrix = np.array([[scale, 0, 0], [0, scale, 0]])
             scaled_height = int(height * scale)
             scaled_width = int(width * scale)
+        else:
+            return np.eye(3)
 
         return scale_matrix, (scaled_height, scaled_width)
     
