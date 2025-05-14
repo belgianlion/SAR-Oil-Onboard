@@ -262,6 +262,8 @@ class OilSpillImage():
         rotated_height = int(height_with_padding * abs(np.cos(np.radians(angle))) + width_with_padding * abs(np.sin(np.radians(angle))))
 
         scale = 1.0
+        new_height = rotated_height
+        new_width = rotated_width
         if rotated_width > MAX_SIZE or rotated_height > MAX_SIZE:
             sx = MAX_SIZE / rotated_width
             sy = MAX_SIZE / rotated_height
