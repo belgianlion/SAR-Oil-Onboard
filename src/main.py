@@ -128,9 +128,7 @@ if __name__ == "__main__":
     print(f"Percentage reduction of: {((spline_image.nbytes-mapped_tck_size)/spline_image.nbytes)*100} for tck")
     print(f"Percentage reduction of: {((spline_image.nbytes-lat_long_size)/spline_image.nbytes)*100} for interpolated")
 
-    cv2.imshow("Splines", spline_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.imwrite("/mnt/sd/SAR-Oil-Onboard/results/spline_image.png", spline_image)
 
     # Display or process the filtered chips
     
