@@ -77,14 +77,14 @@ if __name__ == "__main__":
     # segmentation_methods = [CascadedSegmentation(AdaptiveOtsuSegmentation((9, 9), adaptive_block_size=81, mean_bias=10), CannyEdgeDetection())]
     # CascadedSegmentation(GaussianBlurForSegmentation((9,9)), AdaptiveThresholdSegmentation(block_size=17, c=3), AdaptiveOtsuSegmentation((0, 0), adaptive_block_size=101, mean_bias=10))
 
-    jpg_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.jpg"
-    png_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.png"
-    xml_jpg_image_path = "/mnt/sd/SAR-Oil-Onboard/Datasets/UAVSAR_IMG_XML/output.jpg.aux.xml"
+    jpg_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.jpg"
+    png_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.png"
+    xml_jpg_image_path = r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\Datasets\UAVSAR_IMG_XML\output.jpg.aux.xml"
 
     oil_spill_image = OilSpillImage(png_image_path, jpg_image_path, xml_jpg_image_path, 1, with_rotation=True, margin=10)
     oil_spill_image.split_jpg_into_chips(chip_size=400, overlap_percentage=0.5)
 
-    model = SegmentationModel("/mnt/sd/SAR-Oil-Onboard/src/models/Segmentation/weights.pt")
+    model = SegmentationModel(r"C:\Users\belgi\OneDrive\Documents\GitHub\SAR-Oil-Onboard\src\models\Segmentation\weights.pt")
 
     # Run the chip through the model
     model.run_on_collection(oil_spill_image.chips)

@@ -215,7 +215,7 @@ class OilSpillImage():
         if point.shape[1] == 2:
             point = np.hstack([point, np.ones((point.shape[0], 1))])
         transposed_transformation = self.inverse_transformation_matrix.T
-        return np.dot(point, transposed_transformation)
+        return np.dot(point, transposed_transformation)[0]
 
     def __get_inverse_transform_matrix(self):
         if self.transformation_matrix is None:
@@ -234,6 +234,8 @@ class OilSpillImage():
     
     @staticmethod
     def __crop_from_corners(corners):
+        # Created with help from Github Copilot
+        # Shifts everything so it is not cropped off after rotation
         min_x = np.min(corners[:, 0])
         min_y = np.min(corners[:, 1])
         max_x = np.max(corners[:, 0])
