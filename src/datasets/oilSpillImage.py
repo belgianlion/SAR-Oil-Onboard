@@ -215,7 +215,7 @@ class OilSpillImage():
         if point.shape[1] == 2:
             point = np.hstack([point, np.ones((point.shape[0], 1))])
         transposed_transformation = self.inverse_transformation_matrix.T
-        return np.dot(point, transposed_transformation)[0]
+        return np.dot(point, transposed_transformation)
 
     def __get_inverse_transform_matrix(self):
         if self.transformation_matrix is None:
